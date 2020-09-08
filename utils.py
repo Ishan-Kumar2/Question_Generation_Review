@@ -1,28 +1,25 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-
-#One t
+from torchtext.data import TabularDataset
+from torchtext.data import Field, ReversibleField
 import spacy
+import string
+
 spacy_eng=spacy.load('en')
 nlp=spacy.load("en_core_web_sm")
-import string
+
 def tokenize_eng(text):
     sent=[]
     lema=nlp(text)
     for tok in spacy_eng.tokenizer(text):
-
         word=tok.lemma_
         #word=tok.text
-
         if word not in string.punctuation:
             sent.append(word)
 
     return sent
 
-from torchtext.data import Field, ReversibleField
 
 TEXT=Field(sequential=True,tokenize=tokenize_eng,
            lower=True,
@@ -38,7 +35,7 @@ LABEL=Field(sequential=True,
             use_vocab=True,
            batch_first=True)
 
-from torchtext.data import TabularDataset
+
 
 fields=[("Unnamed: 0",None),
         ("Unnamed: 0.1",None),
@@ -56,22 +53,14 @@ train=TabularDataset(path='./data/train_small.csv',
                     fields=fields)
 
 
-TEXT.build_vocab(train,min_freq=1)
+TEXT.build_vocab(train,min_freq=2,vectors='fasttext.simple.300d')
 
-LABEL.build_vocab(train,min_freq=1)#vectors='glove.6B.50d')
+LABEL.build_vocab(train,min_freq=1,vectors='fasttext.simple.300d')#vectors='glove.6B.50d')
 
 print(f"TEXT Vocab len {len(TEXT.vocab)}")
 print(f"LABEL Vocab len {len(LABEL.vocab)}")
-print(TEXT.vocab.stoi)
-print(TEXT.vocab.stoi['hell'])
-print(TEXT.vocab.stoi['the'])
-from torchtext.data import Iterator,BucketIterator
 
-train_iterator=BucketIterator(train,
-                             batch_size=32,
-                             sort_key=lambda x: len(x.context),
-                             sort_within_batch=True,
-                             repeat=False)
+
 
 class BatchWrapper:
     def __init__(self,dl,x_vars1,x_vars2,y_vars):

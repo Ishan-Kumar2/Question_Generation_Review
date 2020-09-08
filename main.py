@@ -1,39 +1,43 @@
 from model import *
 from utils import *
-
-ENC_EMB_DIM=100
-DEC_EMB_DIM=100
-HID_DIM=10
-ENC_DROPOUT=0.5
-DEC_DROPOUT=0.5
-Input_vocab=len(TEXT.vocab)
-pretrained_wvs=torch.ones((Input_vocab,100))
-
-
-enc=Encoder_Model(n_vocab=Input_vocab,pretrained_vecs=pretrained_wvs
-                  ,embedding_dim=ENC_EMB_DIM,hidden_dim=HID_DIM,dropout=ENC_DROPOUT)
+import config as config
 from torchtext.data import metrics
-Output_dim=len(LABEL.vocab)
-pretrianed_wvs=torch.ones((Output_dim,100))
-HID_DIM=40
-dec=Decoder(output_dim=Output_dim,emb_dim=DEC_EMB_DIM,hid_dim=HID_DIM,
-            dropout=DEC_DROPOUT,pretrained_vecs=pretrianed_wvs)
+from torchtext.data import Iterator,BucketIterator
 
-use_cuda=torch.cuda.is_available()
-device=torch.device("cuda:0" if use_cuda else "cpu")
+import random
+
+ENC_EMB_DIM=config.ENC_EMB_DIM
+HID_DIM=config.ENC_HID_DIM
+ENC_DROPOUT=config.ENC_DROPOUT
+input_vocab=len(TEXT.vocab)
+pretrained_wvs=TEXT.vocab.vectors
+
+enc=Encoder_Model(n_vocab=input_vocab,pretrained_vecs=pretrained_wvs
+                  ,embedding_dim=ENC_EMB_DIM,hidden_dim=HID_DIM,dropout=ENC_DROPOUT)
+
+output_dim=len(LABEL.vocab)
+pretrianed_wvs=LABEL.vocab.vectors
+HID_DIM=config.DEC_HID_DIM
+
+dec=Decoder(output_dim=output_dim,emb_dim=config.DEC_EMBEDDING_DIM,
+            hid_dim=HID_DIM,
+            dropout=config.DEC_DROPOUT,
+            pretrained_vecs=pretrianed_wvs)
+
+
+device=config.device
 model=Seq2Seq(enc,dec,device).to(device)
 
 optimizer=optim.Adam(model.parameters())
-import random
+
 TRG_PAD_IDX=LABEL.vocab.stoi[LABEL.pad_token]
 criterion=nn.CrossEntropyLoss(ignore_index=TRG_PAD_IDX)
 
-sent=[]
-sent_correct=[]
+
 
 train_iterator=BucketIterator(train,
-                             batch_size=32,
-                             device=-1,
+                             batch_size=config.batch_size,
+                             device=config.device,
                              sort_key=lambda x: len(x.context),
                              sort_within_batch=True,
                              repeat=False)
@@ -44,27 +48,22 @@ train_iterator=BucketIterator(train,
 def train(model,iterator,optimizer,criterion,clip):
     model.train()
     epoch_loss=0
-    print("Here")
+
     sent_=[]
     sent_correct_=[]
     for i,batch in enumerate(iterator):
-
 
         input=batch.text
         output=batch.question
         context=batch.context
 
-        print(input.shape)
-        print(output.shape)
-        print(context.shape)
 
         print(f"Batch Number {i}")
         optimizer.zero_grad()
         output_pred=model(input,output,context)
 
-        if i==0:
+        if i%10==0:
 
-            print("Here")
             #for batch_no in range(output_pred.shape[0]):
             sent=[]
             sent_correct=[]
@@ -81,7 +80,6 @@ def train(model,iterator,optimizer,criterion,clip):
                 except IndexError:
                     print("Smaller Batch")
                     continue"""
-        break
 
         output_pred=output_pred[:,1:,:]
 
@@ -96,23 +94,26 @@ def train(model,iterator,optimizer,criterion,clip):
         epoch_loss+=loss.item()
         loss.backward()
         print(loss)
+
         torch.nn.utils.clip_grad_norm_(model.parameters(),clip)
         optimizer.step()
 
     return epoch_loss/len(iterator),sent_,sent_correct_
 
 
-
-
-
-N_EPOCHS=1
-CLIP=1
-optimizer=optim.Adam(model.parameters())
+N_EPOCHS=config.N_EPOCHS
+CLIP=config.CLIP
+loss_epochs=[]
 for epoch in range(N_EPOCHS):
     train_loss,sent_,sent_correct_=train(model,train_iterator,optimizer,criterion,CLIP)
     print(f"Epoch Number{epoch} Train LOSS {train_loss: .3f} ")
-print(sent_)
-print(sent_correct_)
-print(len(sent_),len(sent_correct_))
-print(metrics.bleu_score(sent[0],sent_correct_[0]))
-torch.save(model.state_dict(), 'model.pt')
+    loss_epochs.append(train_loss)
+for i in range(len(sent_)):
+    print("Predicted Question")
+    print(sent_[i])
+    print("Actual Question")
+    print(sent_correct_[i])
+print(loss_epochs)
+#print(len(sent_),len(sent_correct_))
+#print(metrics.bleu_score(sent[0],sent_correct_[0]))
+torch.save(model.state_dict(), './seq2seq_model.pt')
