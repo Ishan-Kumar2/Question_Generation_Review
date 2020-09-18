@@ -170,5 +170,5 @@ def get_loader(path, batch_size=32):
                                               batch_size=batch_size,
                                               shuffle=True,
                                               collate_fn=collate_fn)             ## TODO: BucketIterato
-    
+
     return data_loader
