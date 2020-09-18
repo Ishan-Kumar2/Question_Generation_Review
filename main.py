@@ -6,42 +6,49 @@ from torchtext.data import Iterator,BucketIterator
 
 import random
 
+train_iterator=get_loader(config.squad_path)
+
 ENC_EMB_DIM=config.ENC_EMB_DIM
 HID_DIM=config.ENC_HID_DIM
 ENC_DROPOUT=config.ENC_DROPOUT
-input_vocab=len(TEXT.vocab)
-pretrained_wvs=TEXT.vocab.vectors
+input_vocab=len(train_iterator.dataset.word2ind_input)
+
+pretrained_wvs=torch.ones((input_vocab,ENC_EMB_DIM))
 
 enc=Encoder_Model(n_vocab=input_vocab,pretrained_vecs=pretrained_wvs
                   ,embedding_dim=ENC_EMB_DIM,hidden_dim=HID_DIM,dropout=ENC_DROPOUT)
 
-output_dim=len(LABEL.vocab)
-pretrianed_wvs=LABEL.vocab.vectors
+output_dim=len(train_iterator.dataset.word2ind_output)
+pretrained_wvs=torch.ones((output_dim,config.DEC_EMBEDDING_DIM))
 HID_DIM=config.DEC_HID_DIM
-
+id2word_output=train_iterator.dataset.id2word_output
+print(id2word_output)
 dec=Decoder(output_dim=output_dim,emb_dim=config.DEC_EMBEDDING_DIM,
             hid_dim=HID_DIM,
             dropout=config.DEC_DROPOUT,
-            pretrained_vecs=pretrianed_wvs)
+            pretrained_vecs=pretrained_wvs)
 
 
 device=config.device
 model=Seq2Seq(enc,dec,device).to(device)
 
+if config.USING_SAVED:
+    pass
+else:
+    model.apply(init_weights)
+
 optimizer=optim.Adam(model.parameters())
 
-TRG_PAD_IDX=LABEL.vocab.stoi[LABEL.pad_token]
-criterion=nn.CrossEntropyLoss(ignore_index=TRG_PAD_IDX)
+
+criterion=nn.CrossEntropyLoss(ignore_index=0)
 
 
 
-train_iterator=BucketIterator(train,
-                             batch_size=config.batch_size,
-                             device=config.device,
-                             sort_key=lambda x: len(x.context),
-                             sort_within_batch=True,
-                             repeat=False)
 
+print("Hello")
+for i in enumerate(train_iterator):
+    print(i[1][0].shape)
+    break
 
 #train_=BatchWrapper(train_iterator,'context','text','question')
 
@@ -53,9 +60,9 @@ def train(model,iterator,optimizer,criterion,clip):
     sent_correct_=[]
     for i,batch in enumerate(iterator):
 
-        input=batch.text
-        output=batch.question
-        context=batch.context
+        input=batch[0]
+        output=batch[2]
+        context=batch[1]
 
 
         print(f"Batch Number {i}")
@@ -69,22 +76,13 @@ def train(model,iterator,optimizer,criterion,clip):
             sent_correct=[]
 
             for k in range(1,output_pred.shape[1]):
-                sent.append(LABEL.vocab.itos[output_pred[0,k,:].argmax()])
-                sent_correct.append(LABEL.vocab.itos[output[0,k]])
+                sent.append(id2word_output[output_pred[0,k,:].argmax().item()])
+                sent_correct.append(id2word_output[output[0,k].item()])
             sent_.append(sent)
             sent_correct_.append(sent_correct)
-            """for p in [1,10,15,20,30]:
-                try:
-                    print(f"Sent Predicted {sent_[p]}")
-                    print(f"Sent Correct {sent_correct_[p]}")
-                except IndexError:
-                    print("Smaller Batch")
-                    continue"""
-
+            return 0,sent_,sent_correct_
         output_pred=output_pred[:,1:,:]
-
         output=output[:,1:]
-
         output_dim=output_pred.shape[-1]
         output_pred=output_pred.reshape(-1,output_dim)
 
@@ -101,7 +99,7 @@ def train(model,iterator,optimizer,criterion,clip):
     return epoch_loss/len(iterator),sent_,sent_correct_
 
 
-N_EPOCHS=config.N_EPOCHS
+N_EPOCHS=1#config.N_EPOCHS
 CLIP=config.CLIP
 loss_epochs=[]
 for epoch in range(N_EPOCHS):
@@ -116,4 +114,4 @@ for i in range(len(sent_)):
 print(loss_epochs)
 #print(len(sent_),len(sent_correct_))
 #print(metrics.bleu_score(sent[0],sent_correct_[0]))
-torch.save(model.state_dict(), './seq2seq_model.pt')
+torch.save(model.state_dict(), config.weight_save_path)

@@ -1,8 +1,16 @@
-
-
-squad_path='./data/train_small.csv'
+import torch
+weight_save_path='./model_weight.pt'
+USING_SAVED=False
+squad_path='../train_smaller.csv'
 use_cuda=torch.cuda.is_available()
 device=torch.device("cuda:0" if use_cuda else "cpu")
+
+min_word_count_inp=10
+min_word_count_out=1
+
+source_dict_dump_path='./source_dict'
+target_dict_dump_path='./target_dict'
+
 
 batch_size=32
 N_EPOCHS=10
