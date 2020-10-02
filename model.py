@@ -12,7 +12,6 @@ class Encoder_Model(nn.Module):
     ---------
     n_vocab : ``int``, Required
         Size of input vocabulary.
-
     pretrained_vecs : ``tensor [vocab size, embedding_dim]``, Optional
         Pretrained Embedding Weights
         Default- random initialisation
@@ -20,25 +19,21 @@ class Encoder_Model(nn.Module):
         To choose arch between
         RNN - 1, LSTM - 2, GRU - 3
         Default 1
-
     embedding_dim : ``int``, Optional
         Embedding dim of Input( Ensure its equal to the embedding dim given as pretrained vecs).
         Default- 100
     hidden_dim : ``int``, Optional
         Hidden dim size of Encoder
         Default- 64
-
     num_layers: ``int``,Optional.
         Number of layers required in encoder
         Default- 1
     bidirectional: ``bool``,Optional.
         Flag denoting whether the encoder is bidirectional
         default- False
-
     dropout: ``int``, Optional.
         Amount of dropout used between the RNN and final FC layers
         default- 0.3
-
     """
     def __init__(self,n_vocab,
                 pretrained_vecs,
@@ -108,7 +103,6 @@ class Decoder(nn.Module):
     self,output_dim,emb_dim,hid_dim,dropout,pretrained_vecs
     output_dim : ``int``, Required
         Size of output vocabulary.
-
     embedding_dim : ``int``, Optional
         Embedding dim of Output( Ensure its equal to the embedding dim given as pretrained vecs).
         Default- 100
@@ -119,11 +113,9 @@ class Decoder(nn.Module):
         To choose arch between
         RNN - 1, LSTM - 2, GRU - 3
         Default 1
-
     hidden_dim : ``int``, Optional
         Hidden dim size of Encoder
         Default- 128 (2* encoder_hidden_size)
-
     dropout: ``int``, Optional.
         Amount of dropout used between the RNN and final FC layers
         default- 0.3
@@ -199,12 +191,9 @@ class Seq2Seq(nn.Module):
     ---------
     encoder ``Encoder`` required
         The encoder instance
-
     decoder ``Decoder`` required
         The decoder instance
-
     device required
-
     teacher_forcing_ratio ``int`` Optional
         Fraction of the time actual output is given to decoder as input rather than prev output
         Default - 0.5
