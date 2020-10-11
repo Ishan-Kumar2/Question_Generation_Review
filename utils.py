@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,14 +12,14 @@ import json
 import argparse
 from collections import Counter
 
+
 def init_weights(m):
     for name, param in m.named_parameters():
         #Normal Init       # TODO: Xavier
-        nn.init.normal_(param.data, mean=0, std=0.01)
+        nn.init.normal_(param.data, mean = 0, std = 0.01)
 
 spacy_eng=spacy.load('en')
 nlp=spacy.load("en_core_web_sm")
-
 def tokenize_eng(text):
     sent=[]
     lema=nlp(text)
@@ -36,8 +35,6 @@ def load_dataset_json(path):
     with open(path, 'r') as f:
         data = json.load(f)
     return data
-
-
 
 def build_word2id(sequences, min_word_count):
     """Creates word2id dictionary.
