@@ -93,9 +93,9 @@ def train(model,iterator,optimizer,criterion,clip):
     return epoch_loss/len(iterator),sent_,sent_correct_
 
 
-N_EPOCHS=1#config.N_EPOCHS
-CLIP=config.CLIP
-loss_epochs=[]
+N_EPOCHS = 1#config.N_EPOCHS
+CLIP = config.CLIP
+loss_epochs = []
 for epoch in range(N_EPOCHS):
     train_loss,sent_,sent_correct_ = train(model,train_iterator,optimizer,criterion,CLIP)
     print(f"Epoch Number{epoch} Train LOSS {train_loss: .3f} ")
